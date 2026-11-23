@@ -88,6 +88,28 @@ window.KEYWORDS = [
     verified: '2026-11-22'
   },
   {
+    name: 'Flying',
+    rules: [{ label: '702.9', id: 'R7029' }],
+    summary: "An evasion ability. A creature with flying can't be blocked except by creatures with flying and/or reach.",
+    doesNot: [
+      "Doesn't make a creature unblockable. Creatures with flying or reach can block it.",
+      "Doesn't stop a flier from blocking ground creatures."
+    ],
+    misread: "Flying only limits who can block it. A flier can block creatures with or without flying.",
+    verified: '2026-11-22'
+  },
+  {
+    name: 'Reach',
+    rules: [{ label: '702.17', id: 'R70217' }, { label: '702.9b', id: 'R7029b' }],
+    summary: "Lets a creature block creatures with flying, as well as everything else it normally can.",
+    doesNot: [
+      "Doesn't give the creature flying, so it doesn't gain evasion when it attacks.",
+      "Doesn't change anything about attacking. It only matters for blocking."
+    ],
+    misread: "Reach isn't a weaker flying. It just means \"can block fliers\".",
+    verified: '2026-11-22'
+  },
+  {
     name: 'First strike',
     rules: [{ label: '702.7', id: 'R7027' }],
     summary: "Creatures with first strike (or double strike) deal combat damage in an extra, earlier step. Creatures without them deal their combat damage afterward, in the regular step.",
@@ -160,6 +182,17 @@ window.KEYWORDS = [
       "Doesn't happen automatically. It's always the owner's choice (\"may\")."
     ],
     misread: "Graveyard and exile work as a state-based action; hand and library work as a replacement effect. Either way the owner decides.",
+    verified: '2026-11-22'
+  },
+  {
+    name: 'Landfall (ability words)',
+    rules: [{ label: '207.2c', id: 'R2072c' }],
+    summary: "Landfall is an \"ability word\": an italic label at the start of some abilities that groups cards with similar effects. On cards it usually goes with something happening when a land comes in under your control, but the exact trigger is whatever that card's text says.",
+    doesNot: [
+      "Has no rules meaning of its own and no entry in the Comprehensive Rules.",
+      "Doesn't do anything by itself. The text after the label is what counts."
+    ],
+    misread: "Landfall isn't a keyword like flying. You can't look up what it does. Read the card's own text. Other ability words work the same way (constellation, raid, morbid and more).",
     verified: '2026-11-22'
   }
 ];
