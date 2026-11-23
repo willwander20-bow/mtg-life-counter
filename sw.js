@@ -1,7 +1,7 @@
 // Network-first with cache fallback: updates show up as soon as you are online,
 // and the app still opens with no signal.
-var CACHE = 'life-counter-v1';
-var FILES = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
+var CACHE = 'life-counter-v2';
+var FILES = ['./', 'index.html', 'keywords.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(FILES); }));
