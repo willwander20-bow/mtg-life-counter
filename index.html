@@ -48,21 +48,24 @@
   .panel.side .rot, .panel.sideR .rot { inset: auto; left: 50%; top: 50%; width: 100cqh; height: 100cqw; }
   .panel.side .rot { transform: translate(-50%, -50%) rotate(90deg); }    /* reads from the left edge */
   .panel.sideR .rot { transform: translate(-50%, -50%) rotate(-90deg); }  /* reads from the right edge */
-  .panel.side .mid { padding-top: 30px; }  /* keeps the name clear of the centre menu button */
-  .panel.side .life, .panel.sideR .life { font-size: min(34cqw, 30cqh); }  /* these panels are short once turned */
+  .panel.side .life, .panel.sideR .life { font-size: min(44cqw, 40cqh); }  /* these panels are short once turned */
   .panel { position: relative; border-radius: var(--radius); overflow: hidden; display: flex; }
   .panel.flip { transform: rotate(180deg); }
   .panel .zone { flex: 1; display: flex; align-items: center; border: 0; background: transparent; font-size: 36px; color: rgba(255,255,255,.55); }
   .panel .zone.minus { justify-content: flex-start; padding-left: 7%; }
   .panel .zone.plus { justify-content: flex-end; padding-right: 7%; }
   .panel .zone:active { background: rgba(255,255,255,.10); }
-  .panel .mid { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+  /* Three rows: name above, life exactly in the middle, tally/warning/button below */
+  .panel .mid { position: absolute; inset: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr); justify-items: center; pointer-events: none; }
+  .mid .top { align-self: end; display: flex; flex-direction: column; align-items: center; }
+  .mid .under { align-self: start; display: flex; flex-direction: column; align-items: center; }
   .panel { container-type: size; }
-  .life { font-size: min(34cqw, 42cqh); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
-  .tally { height: 1.4em; font-size: 22px; color: rgba(255,255,255,.8); font-variant-numeric: tabular-nums; }
-  .name { font-size: 15px; color: rgba(255,255,255,.7); margin-bottom: 4px; }
+  .life { font-size: min(44cqw, 42cqh); font-weight: 800; line-height: 1; text-align: center; font-variant-numeric: tabular-nums; }
+  .tally { height: 1.2em; font-size: 18px; color: rgba(255,255,255,.8); font-variant-numeric: tabular-nums; }
+  .name { font-size: 15px; color: rgba(255,255,255,.7); }
   .panel.dead .life { opacity: .35; }
-  .warn { height: 1.2em; margin-top: 4px; font-size: 16px; font-weight: 700; color: #ffd36a; }
+  .warn { font-size: 14px; font-weight: 700; color: #ffd36a; }
+  .warn:empty { display: none; }
 
   /* Commander damage: small button per panel, opens a layer inside that panel (rotates with it) */
   .cmdbtn { pointer-events: auto; margin-top: 4px; border: 1px solid rgba(255,255,255,.35);
@@ -191,8 +194,8 @@
       el.innerHTML = '<div class="rot">' +
         '<button class="zone minus" aria-label="Minus one life">&minus;</button>' +
         '<button class="zone plus" aria-label="Plus one life">+</button>' +
-        '<div class="mid"><div class="name"></div><div class="life"></div><div class="tally"></div><div class="warn"></div>' +
-        '<button class="cmdbtn" aria-label="Commander damage">&#9876; Cmdr</button></div>' +
+        '<div class="mid"><div class="top"><div class="name"></div><div class="tally"></div></div><div class="life"></div><div class="under"><div class="warn"></div>' +
+        '<button class="cmdbtn" aria-label="Commander damage">&#9876; Cmdr</button></div></div>' +
         '<div class="cmdlayer"></div></div>';
       board.appendChild(el);
       if (state.cmdOn === false) el.querySelector('.cmdbtn').hidden = true;
