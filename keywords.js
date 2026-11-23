@@ -110,6 +110,61 @@ window.KEYWORDS = [
     verified: '2026-11-22'
   },
   {
+    name: 'Haste',
+    rules: [{ label: '702.10', id: 'R70210' }, { label: '302.6', id: 'R3026' }],
+    summary: "The creature can attack, and use abilities with the tap or untap symbol in their cost, the turn it comes under your control. Without haste it has to have been under your control since your turn began (\"summoning sickness\").",
+    doesNot: [
+      "Doesn't let it attack more than once a turn.",
+      "Doesn't matter once the creature has been under your control since the start of your turn."
+    ],
+    misread: "Haste isn't only for attacking. It also lets the creature use {T} abilities right away.",
+    verified: '2026-11-22'
+  },
+  {
+    name: 'Vigilance',
+    rules: [{ label: '702.20', id: 'R70220' }],
+    summary: "Attacking doesn't cause the creature to tap.",
+    doesNot: [
+      "Doesn't stop other things from tapping it (costs, opponents' effects).",
+      "Doesn't let a tapped creature attack. It still has to be untapped to be declared as an attacker."
+    ],
+    misread: "Vigilance just means attacking doesn't tap it. That's why it can attack and still be untapped to block on your opponents' turns.",
+    verified: '2026-11-22'
+  },
+  {
+    name: 'Menace',
+    rules: [{ label: '702.111', id: 'R702111' }],
+    summary: "An evasion ability. A creature with menace can't be blocked except by two or more creatures.",
+    doesNot: [
+      "Doesn't make it unblockable. Two or more blockers is fine.",
+      "Doesn't mean exactly two blockers. Two or more all count."
+    ],
+    misread: "One big blocker can't stop a creature with menace by itself, but a pair of small ones can.",
+    verified: '2026-11-22'
+  },
+  {
+    name: 'Flash',
+    rules: [{ label: '702.8', id: 'R7028' }, { label: '302.6', id: 'R3026' }],
+    summary: "You may play this card any time you could cast an instant.",
+    doesNot: [
+      "Doesn't make the card an instant. A creature with flash is still a creature once it resolves.",
+      "Doesn't give a creature haste. If it enters on your own turn, it still can't attack that turn."
+    ],
+    misread: "Flash is about timing, not speed. A flash creature cast at the end of an opponent's turn can attack on your turn only because you've controlled it since your turn began.",
+    verified: '2026-11-22'
+  },
+  {
+    name: 'Defender',
+    rules: [{ label: '702.3', id: 'R7023' }],
+    summary: "A creature with defender can't attack.",
+    doesNot: [
+      "Doesn't stop it from blocking.",
+      "Doesn't stop it from using its other abilities, including tap abilities (once it's not summoning sick)."
+    ],
+    misread: "Defender only stops attacking. It can block normally, and it can still use abilities that tap it.",
+    verified: '2026-11-22'
+  },
+  {
     name: 'First strike',
     rules: [{ label: '702.7', id: 'R7027' }],
     summary: "Creatures with first strike (or double strike) deal combat damage in an extra, earlier step. Creatures without them deal their combat damage afterward, in the regular step.",
