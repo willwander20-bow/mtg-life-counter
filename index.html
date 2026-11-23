@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#111418">
+<title>Life Counter</title>
+<style>
+  :root {
+    --bg: #111418;
+    --ink: #f2f4f7;
+    --muted: #8a93a0;
+    --gap: 10px;
+    --radius: 18px;
+    --c0: #2f5d8a; --c1: #8a3b3b; --c2: #3b7a52; --c3: #7a5a2f;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    overscroll-behavior: none; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+  body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  button { font: inherit; color: inherit; }
+
+  /* Setup screen */
+  #setup { height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 28px; padding: 24px; max-width: 480px; margin: 0 auto; }
+  #setup h1 { margin: 0; font-size: 28px; font-weight: 700; }
+  .row { display: flex; gap: 10px; }
+  .choice { flex: 1; padding: 18px 0; font-size: 24px; border: 2px solid #2a313b; background: #1a1f26; border-radius: 14px; }
+  .choice.on { border-color: #6aa0e0; background: #22344a; }
+  .label { color: var(--muted); font-size: 14px; margin-bottom: 8px; }
+  .start { padding: 20px; font-size: 22px; font-weight: 700; border: 0; border-radius: 14px; background: #3d7be0; }
+  #life-input { width: 100%; padding: 14px; font-size: 22px; background: #1a1f26; border: 2px solid #2a313b; border-radius: 14px; color: var(--ink); text-align: center; }
+
+  /* Game screen */
+  #game { position: fixed; inset: 0; padding: calc(var(--gap) + env(safe-area-inset-top)) var(--gap) calc(var(--gap) + env(safe-area-inset-bottom)); display: none; }
+  #game.on { display: block; }
+  #board { height: 100%; display: grid; gap: var(--gap); }
+  #board.n2 { grid-template-rows: 1fr 1fr; }
+  #board.n3 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+  #board.n3 .p0 { grid-column: 1 / 3; }
+  #board.n4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+
+  .panel { position: relative; border-radius: var(--radius); overflow: hidden; display: flex; }
+  .panel.flip { transform: rotate(180deg); }
+  .panel .zone { flex: 1; display: flex; align-items: center; border: 0; background: transparent; font-size: 36px; color: rgba(255,255,255,.55); }
+  .panel .zone.minus { justify-content: flex-start; padding-left: 7%; }
+  .panel .zone.plus { justify-content: flex-end; padding-right: 7%; }
+  .panel .zone:active { background: rgba(255,255,255,.10); }
+  .panel .mid { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+  .panel { container-type: size; }
+  .life { font-size: min(34cqw, 42cqh); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+  .tally { height: 1.4em; font-size: 22px; color: rgba(255,255,255,.8); font-variant-numeric: tabular-nums; }
+  .name { font-size: 15px; color: rgba(255,255,255,.7); margin-bottom: 4px; }
+  .panel.dead .life { opacity: .35; }
+  .warn { height: 1.2em; margin-top: 4px; font-size: 16px; font-weight: 700; color: #ffd36a; }
+
+  /* Commander damage: small button per panel, opens a layer inside that panel (rotates with it) */
+  .cmdbtn { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 2; border: 1px solid rgba(255,255,255,.35);
+    background: rgba(0,0,0,.25); border-radius: 14px; padding: 6px 14px; font-size: 14px; color: rgba(255,255,255,.85); }
+  .cmdlayer { position: absolute; inset: 0; z-index: 3; background: #0c0f13; display: none; flex-direction: column; padding: 10px 14px; gap: 6px; }
+  .cmdlayer.on { display: flex; }
+  .cmdlayer h3 { margin: 0; font-size: 14px; font-weight: 600; color: var(--muted); text-align: center; }
+  .cmdrow { flex: 1; display: flex; align-items: center; gap: 10px; min-height: 0; }
+  .cmdrow .who { flex: 1; font-size: 15px; color: rgba(255,255,255,.8); }
+  .cmdrow button { width: 56px; height: 100%; max-height: 52px; font-size: 26px; border: 0; border-radius: 12px; background: #2a313b; }
+  .cmdrow .n { width: 44px; text-align: center; font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .cmdrow.lethal .n { color: #ff7a6a; }
+  .cmdrow .flag { font-size: 12px; color: #ff7a6a; min-width: 48px; }
+  .cmddone { padding: 10px; font-size: 16px; border: 0; border-radius: 12px; background: #3d7be0; }
+
+  /* Menu: small, away from the tap zones, needs two steps to reset */
+  #menu-btn { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 5;
+    width: 44px; height: 44px; border-radius: 50%; border: 2px solid #3a4350; background: #161a20; color: var(--muted); font-size: 20px; }
+  #sheet { position: fixed; inset: 0; z-index: 10; background: rgba(0,0,0,.75); display: none; align-items: center; justify-content: center; }
+  #sheet.on { display: flex; }
+  #sheet .card { width: min(88vw, 360px); background: #1a1f26; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+  #sheet button { padding: 16px; font-size: 18px; border: 0; border-radius: 12px; background: #2a313b; }
+  #sheet button.danger { background: #8a3b3b; }
+</style>
+</head>
+<body>
+<section id="setup">
+  <h1>Life Counter</h1>
+  <div>
+    <div class="label">Players</div>
+    <div class="row" id="count-row">
+      <button class="choice" data-n="2">2</button>
+      <button class="choice on" data-n="3">3</button>
+      <button class="choice" data-n="4">4</button>
+    </div>
+  </div>
+  <div>
+    <div class="label">Starting life</div>
+    <input id="life-input" type="number" inputmode="numeric" value="40" min="1" max="999">
+  </div>
+  <div>
+    <div class="label">Commander damage</div>
+    <div class="row" id="cmd-row">
+      <button class="choice on" data-v="1">On</button>
+      <button class="choice" data-v="0">Off</button>
+    </div>
+  </div>
+  <button class="start" id="start-btn">Start game</button>
+</section>
+
+<section id="game"><div id="board"></div></section>
+<button id="menu-btn" aria-label="Menu" hidden>&#9776;</button>
+<div id="sheet"><div class="card">
+  <button id="close-sheet">Back to game</button>
+  <button id="undo-btn">Undo</button>
+  <button id="new-game" class="danger">New game&hellip;</button>
+</div></div>
+
+<script>
+(function () {
+  var KEY = 'mtg-life-counter-v1';
+  var COLORS = ['var(--c0)', 'var(--c1)', 'var(--c2)', 'var(--c3)'];
+  var state = null;
+
+  function load() { try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; } }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  var $ = function (id) { return document.getElementById(id); };
+  var count = 3;
+
+  // ---- Setup
+  $('count-row').addEventListener('click', function (e) {
+    var b = e.target.closest('.choice'); if (!b) return;
+    count = +b.dataset.n;
+    [].forEach.call($('count-row').querySelectorAll('.choice'), function (c) { c.classList.toggle('on', c === b); });
+  });
+  var cmdOn = true;
+  $('cmd-row').addEventListener('click', function (e) {
+    var b = e.target.closest('.choice'); if (!b) return;
+    cmdOn = b.dataset.v === '1';
+    [].forEach.call($('cmd-row').querySelectorAll('.choice'), function (c) { c.classList.toggle('on', c === b); });
+  });
+  $('start-btn').addEventListener('click', function () {
+    var life = Math.max(1, Math.min(999, parseInt($('life-input').value, 10) || 40));
+    state = { n: count, start: life, cmdOn: cmdOn, players: [], hist: [] };
+    for (var i = 0; i < count; i++) state.players.push({ name: 'Player ' + (i + 1), life: life, cmd: {} });
+    save(); showGame();
+  });
+
+  // ---- Game
+  function layoutFlags(n, i) {
+    // Players across the table from the bottom edge face the other way.
+    if (n === 2) return i === 0;
+    if (n === 3) return i === 0;
+    return i < 2;
+  }
+
+  function showGame() {
+    $('setup').style.display = 'none';
+    $('game').classList.add('on');
+    $('menu-btn').hidden = false;
+    wakeLock();
+    var board = $('board');
+    board.className = 'n' + state.n;
+    board.innerHTML = '';
+    state.players.forEach(function (p, i) {
+      var el = document.createElement('div');
+      el.className = 'panel p' + i + (layoutFlags(state.n, i) ? ' flip' : '');
+      el.style.background = COLORS[i];
+      el.innerHTML =
+        '<button class="zone minus" aria-label="Minus one life">&minus;</button>' +
+        '<button class="zone plus" aria-label="Plus one life">+</button>' +
+        '<div class="mid"><div class="name"></div><div class="life"></div><div class="tally"></div><div class="warn"></div></div>' +
+        '<button class="cmdbtn" aria-label="Commander damage">&#9876; Cmdr</button>' +
+        '<div class="cmdlayer"></div>';
+      board.appendChild(el);
+      if (state.cmdOn === false) el.querySelector('.cmdbtn').hidden = true;
+      else el.querySelector('.cmdbtn').addEventListener('click', function () { openCmd(i); });
+      bindZone(el.querySelector('.minus'), i, -1);
+      bindZone(el.querySelector('.plus'), i, +1);
+      render(i);
+    });
+  }
+
+  var tallies = {}; // pending net change per player, shown for 1.5s
+  function render(i) {
+    var p = state.players[i], el = document.querySelector('.p' + i);
+    el.querySelector('.name').textContent = p.name;
+    el.querySelector('.life').textContent = p.life;
+    var lethal = Object.keys(p.cmd || {}).some(function (j) { return p.cmd[j] >= 21; });
+    el.classList.toggle('dead', p.life <= 0 || lethal);
+    el.querySelector('.warn').textContent = lethal ? '⚠ 21 commander damage' : '';
+    var t = tallies[i];
+    el.querySelector('.tally').textContent = t && t.net ? (t.net > 0 ? '+' : '') + t.net : '';
+  }
+
+  // ---- History: rapid taps on the same thing merge into one entry
+  function pushHist(e) {
+    var h = state.hist || (state.hist = []), last = h[h.length - 1], now = Date.now();
+    if (last && last.k === e.k && last.i === e.i && last.j === e.j && now - last.t < 1500) {
+      last.d += e.d; last.t = now;
+      if (last.d === 0) h.pop();
+    } else { e.t = now; h.push(e); }
+    if (h.length > 100) h.shift();
+  }
+  function describe(e) {
+    var who = state.players[e.i].name, s = (e.d > 0 ? '+' : '−') + Math.abs(e.d);
+    return e.k === 'c' ? who + ' cmdr dmg from ' + state.players[e.j].name + ' ' + s : who + ' life ' + s;
+  }
+  function refreshUndo() {
+    var h = state && state.hist || [], b = $('undo-btn');
+    b.disabled = !h.length;
+    b.textContent = h.length ? 'Undo: ' + describe(h[h.length - 1]) : 'Nothing to undo';
+  }
+  $('undo-btn').addEventListener('click', function () {
+    var h = state.hist || [], e = h.pop(); if (!e) return;
+    if (e.k === 'c') {
+      state.players[e.i].cmd[e.j] = Math.max(0, (state.players[e.i].cmd[e.j] || 0) - e.d);
+      state.players[e.i].life += e.d;   // commander damage also cost life; give it back
+      renderCmd(e.i);
+    } else state.players[e.i].life -= e.d;
+    save(); render(e.i); refreshUndo();
+  });
+
+  // ---- Commander damage layer (per panel, per opponent; never touches life)
+  function openCmd(i) {
+    var layer = document.querySelector('.p' + i + ' .cmdlayer');
+    layer.classList.add('on'); renderCmd(i);
+  }
+  function renderCmd(i) {
+    var p = state.players[i], layer = document.querySelector('.p' + i + ' .cmdlayer');
+    p.cmd = p.cmd || {};
+    layer.innerHTML = '<h3>Commander damage ' + p.name + ' has taken</h3>';
+    state.players.forEach(function (o, j) {
+      if (j === i) return;
+      var n = p.cmd[j] || 0, row = document.createElement('div');
+      row.className = 'cmdrow' + (n >= 21 ? ' lethal' : '');
+      row.innerHTML = '<div class="who"></div><button aria-label="Minus">&minus;</button><div class="n"></div><button aria-label="Plus">+</button><div class="flag">' + (n >= 21 ? 'Lethal' : '') + '</div>';
+      row.querySelector('.who').textContent = 'from ' + o.name;
+      row.querySelector('.n').textContent = n;
+      var b = row.querySelectorAll('button');
+      b[0].addEventListener('click', function () { cmdChange(i, j, -1); });
+      b[1].addEventListener('click', function () { cmdChange(i, j, 1); });
+      layer.appendChild(row);
+    });
+    var done = document.createElement('button');
+    done.className = 'cmddone'; done.textContent = 'Done';
+    done.addEventListener('click', function () { layer.classList.remove('on'); });
+    layer.appendChild(done);
+  }
+  function cmdChange(i, j, d) {
+    var p = state.players[i]; p.cmd = p.cmd || {};
+    var old = p.cmd[j] || 0, n = Math.max(0, old + d);
+    if (n === old) return;
+    // Traditional rule: commander damage is also damage, so life drops by the same amount.
+    p.cmd[j] = n; p.life -= n - old; pushHist({ k: 'c', i: i, j: j, d: n - old });
+    save(); renderCmd(i); render(i);
+  }
+
+  function change(i, d) {
+    pushHist({ k: 'l', i: i, j: -1, d: d });
+    state.players[i].life += d;
+    var t = tallies[i] || (tallies[i] = { net: 0, timer: null });
+    t.net += d;
+    clearTimeout(t.timer);
+    t.timer = setTimeout(function () { t.net = 0; render(i); }, 1500);
+    save(); render(i);
+  }
+
+  // Tap = 1. Hold 0.5s = jumps of 5, repeating. Pointer is captured so a drag
+  // onto a neighbouring panel never changes that panel.
+  function bindZone(btn, i, dir) {
+    var holdTimer, repeat, held = false;
+    function stop() { clearTimeout(holdTimer); clearInterval(repeat); }
+    btn.addEventListener('pointerdown', function (e) {
+      try { btn.setPointerCapture(e.pointerId); } catch (x) {}
+      held = false;
+      holdTimer = setTimeout(function () {
+        held = true; change(i, 5 * dir);
+        repeat = setInterval(function () { change(i, 5 * dir); }, 450);
+      }, 500);
+    });
+    btn.addEventListener('pointerup', function (e) {
+      var wasHeld = held; stop();
+      if (wasHeld) return;
+      var r = btn.getBoundingClientRect();
+      var inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+      if (inside) change(i, dir);
+    });
+    btn.addEventListener('pointercancel', stop);
+    btn.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  }
+
+  // ---- Menu (two deliberate steps to wipe a game)
+  $('menu-btn').addEventListener('click', function () { $('sheet').classList.add('on'); refreshUndo(); armed = false; $('new-game').textContent = 'New game…'; });
+  $('close-sheet').addEventListener('click', function () { $('sheet').classList.remove('on'); });
+  var armed = false;
+  $('new-game').addEventListener('click', function () {
+    if (!armed) { armed = true; this.textContent = 'Tap again: erase this game'; return; }
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    state = null; location.reload();
+  });
+
+  // ---- Keep screen on during a game (ignored where unsupported)
+  var lock = null;
+  function wakeLock() {
+    if (!('wakeLock' in navigator)) return;
+    navigator.wakeLock.request('screen').then(function (l) { lock = l; }).catch(function () {});
+  }
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && state) wakeLock(); });
+
+  // ---- Boot: resume a saved game after refresh
+  var saved = load();
+  if (saved && saved.players && saved.players.length) { state = saved; showGame(); }
+})();
+</script>
+</body>
+</html>
