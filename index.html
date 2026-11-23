@@ -59,7 +59,7 @@
   .panel.side .rot, .panel.sideR .rot { inset: auto; left: 50%; top: 50%; width: 100cqh; height: 100cqw; }
   .panel.side .rot { transform: translate(-50%, -50%) rotate(90deg); }    /* reads from the left edge */
   .panel.sideR .rot { transform: translate(-50%, -50%) rotate(-90deg); }  /* reads from the right edge */
-  .panel.side .life, .panel.sideR .life { font-size: min(44cqw, 40cqh); }  /* these panels are short once turned */
+  .panel.side .life, .panel.sideR .life { font-size: min(44cqw, 40cqh); line-height: .8; }  /* these panels are short once turned */
   .panel { position: relative; border-radius: var(--radius); overflow: hidden; display: flex; }
   .panel.flip { transform: rotate(180deg); }
   .panel .zone { flex: 1; display: flex; align-items: center; border: 0; background: transparent; font-size: 36px; color: rgba(255,255,255,.55); }
@@ -79,7 +79,9 @@
   .warn:empty { display: none; }
 
   /* Commander damage: small button per panel, opens a layer inside that panel (rotates with it) */
-  .cmdbtn { pointer-events: auto; margin-top: 4px; border: 1px solid rgba(255,255,255,.35);
+  .btnrow { display: flex; gap: 8px; margin-top: 4px; }
+  .poisonbtn.lethal { border-color: #b6f06a; color: #b6f06a; }
+  .poisonbtn, .cmdbtn { pointer-events: auto; border: 1px solid rgba(255,255,255,.35);
     background: rgba(0,0,0,.25); border-radius: 14px; padding: 6px 14px; font-size: 14px; color: rgba(255,255,255,.85); }
   .cmdlayer { position: absolute; inset: 0; z-index: 3; background: #0c0f13; display: none; flex-direction: column; padding: 10px 14px; gap: 6px; }
   .cmdlayer.on { display: flex; }
@@ -260,10 +262,12 @@
         '<button class="zone minus" aria-label="Minus one life">&minus;</button>' +
         '<button class="zone plus" aria-label="Plus one life">+</button>' +
         '<div class="mid"><div class="top"><div class="name"></div><div class="tally"></div></div><div class="life"></div><div class="under"><div class="warn"></div>' +
-        '<button class="cmdbtn" aria-label="Commander damage">&#9876; Cmdr</button></div></div>' +
+        '<div class="btnrow"><button class="cmdbtn" aria-label="Commander damage">&#9876; Cmdr</button>' +
+        '<button class="poisonbtn" aria-label="Poison counters">&#9760; 0</button></div></div></div>' +
         '<div class="cmdlayer"></div></div>';
       board.appendChild(el);
       el.querySelector('.name').addEventListener('click', function () { openRename(i); });
+      el.querySelector('.poisonbtn').addEventListener('click', function () { openPoison(i); });
       if (state.cmdOn === false) el.querySelector('.cmdbtn').hidden = true;
       else el.querySelector('.cmdbtn').addEventListener('click', function () { openCmd(i); });
       bindZone(el.querySelector('.minus'), i, -1);
@@ -278,8 +282,10 @@
     el.querySelector('.name').textContent = p.name;
     el.querySelector('.life').textContent = p.life;
     var lethal = Object.keys(p.cmd || {}).some(function (j) { return p.cmd[j] >= 21; });
-    el.classList.toggle('dead', p.life <= 0 || lethal);
-    el.querySelector('.warn').textContent = lethal ? '⚠ 21 commander damage' : '';
+    var pz = p.poison || 0, pLethal = pz >= 10;
+    el.classList.toggle('dead', p.life <= 0 || lethal || pLethal);
+    el.querySelector('.warn').textContent = [lethal ? '⚠ 21 commander damage' : '', pLethal ? '☠ 10 poison' : ''].filter(Boolean).join(' · ');
+    var pb = el.querySelector('.poisonbtn'); pb.textContent = '☠ ' + pz; pb.classList.toggle('lethal', pLethal);
     var t = tallies[i];
     el.querySelector('.tally').textContent = t && t.net ? (t.net > 0 ? '+' : '') + t.net : '';
   }
@@ -295,7 +301,13 @@
   }
   function describe(e) {
     var who = state.players[e.i].name, s = (e.d > 0 ? '+' : '−') + Math.abs(e.d);
+    if (e.k === 'p') return who + ' poison ' + s;
     return e.k === 'c' ? who + ' cmdr dmg from ' + state.players[e.j].name + ' ' + s : who + ' life ' + s;
+  }
+  // Re-draw whichever layer (commander or poison) is on a panel
+  function refreshLayer(i) {
+    var layer = document.querySelector('.p' + i + ' .cmdlayer');
+    if (layer && layer.dataset.mode === 'poison') renderPoison(i); else renderCmd(i);
   }
   function refreshUndo() {
     var h = state && state.hist || [], b = $('undo-btn');
@@ -307,7 +319,10 @@
     if (e.k === 'c') {
       state.players[e.i].cmd[e.j] = Math.max(0, (state.players[e.i].cmd[e.j] || 0) - e.d);
       state.players[e.i].life += e.d;   // commander damage also cost life; give it back
-      renderCmd(e.i);
+      refreshLayer(e.i);
+    } else if (e.k === 'p') {
+      state.players[e.i].poison = Math.max(0, (state.players[e.i].poison || 0) - e.d);
+      refreshLayer(e.i);
     } else state.players[e.i].life -= e.d;
     save(); render(e.i); refreshUndo();
   });
@@ -330,7 +345,7 @@
     // keep any open commander layers (they list other players' names) in step
     state.players.forEach(function (p, j) {
       var layer = document.querySelector('.p' + j + ' .cmdlayer');
-      if (layer && layer.classList.contains('on')) renderCmd(j);
+      if (layer && layer.classList.contains('on')) refreshLayer(j);
     });
     closeRename();
   }
@@ -346,7 +361,9 @@
   function renderCmd(i) {
     var p = state.players[i], layer = document.querySelector('.p' + i + ' .cmdlayer');
     p.cmd = p.cmd || {};
-    layer.innerHTML = '<h3>Commander damage ' + p.name + ' has taken</h3>';
+    layer.dataset.mode = 'cmd';
+    layer.innerHTML = '<h3></h3>';
+    layer.querySelector('h3').textContent = 'Commander damage ' + p.name + ' has taken';
     state.players.forEach(function (o, j) {
       if (j === i) return;
       var n = p.cmd[j] || 0, row = document.createElement('div');
@@ -371,6 +388,36 @@
     // Traditional rule: commander damage is also damage, so life drops by the same amount.
     p.cmd[j] = n; p.life -= n - old; pushHist({ k: 'c', i: i, j: j, d: n - old });
     save(); renderCmd(i); render(i);
+  }
+
+  // ---- Poison layer: 10 or more poison counters loses (CR 704.5c). Separate from life.
+  function openPoison(i) {
+    var layer = document.querySelector('.p' + i + ' .cmdlayer');
+    layer.classList.add('on'); renderPoison(i);
+  }
+  function renderPoison(i) {
+    var p = state.players[i], layer = document.querySelector('.p' + i + ' .cmdlayer'), n = p.poison || 0;
+    layer.dataset.mode = 'poison';
+    layer.innerHTML = '<h3></h3>';
+    layer.querySelector('h3').textContent = 'Poison counters on ' + p.name;
+    var row = document.createElement('div');
+    row.className = 'cmdrow' + (n >= 10 ? ' lethal' : '');
+    row.innerHTML = '<div class="who">10 loses</div><button aria-label="Minus">&minus;</button><div class="n"></div><button aria-label="Plus">+</button><div class="flag">' + (n >= 10 ? 'Lethal' : '') + '</div>';
+    row.querySelector('.n').textContent = n;
+    var b = row.querySelectorAll('button');
+    b[0].addEventListener('click', function () { poisonChange(i, -1); });
+    b[1].addEventListener('click', function () { poisonChange(i, 1); });
+    layer.appendChild(row);
+    var done = document.createElement('button');
+    done.className = 'cmddone'; done.textContent = 'Done';
+    done.addEventListener('click', function () { layer.classList.remove('on'); });
+    layer.appendChild(done);
+  }
+  function poisonChange(i, d) {
+    var p = state.players[i], old = p.poison || 0, n = Math.max(0, old + d);
+    if (n === old) return;
+    p.poison = n; pushHist({ k: 'p', i: i, j: -1, d: n - old });
+    save(); renderPoison(i); render(i);
   }
 
   function change(i, d) {

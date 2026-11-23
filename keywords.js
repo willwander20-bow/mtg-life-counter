@@ -209,6 +209,17 @@ window.KEYWORDS = [
     verified: '2026-11-22'
   },
   {
+    name: 'Poison counters',
+    rules: [{ label: '122.1f', id: 'R1221f' }, { label: '704.5c', id: 'R7045c' }, { label: '120.3b', id: 'R1203b' }],
+    summary: "A player with ten or more poison counters loses the game. Poison counters are tracked separately from life.",
+    doesNot: [
+      "Don't reduce life. Life and poison are two separate ways to lose.",
+      "Aren't affected by lifegain."
+    ],
+    misread: "Damage from a source with infect gives the player poison counters instead of making them lose life.",
+    verified: '2026-11-22'
+  },
+  {
     name: 'Commander tax',
     rules: [{ label: '903.8', id: 'R9038' }],
     summary: "Casting your commander from the command zone costs {2} more for each previous time you cast it from there this game.",
