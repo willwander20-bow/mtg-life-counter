@@ -48,6 +48,8 @@
   .panel.side .rot, .panel.sideR .rot { inset: auto; left: 50%; top: 50%; width: 100cqh; height: 100cqw; }
   .panel.side .rot { transform: translate(-50%, -50%) rotate(90deg); }    /* reads from the left edge */
   .panel.sideR .rot { transform: translate(-50%, -50%) rotate(-90deg); }  /* reads from the right edge */
+  .panel.side .mid { padding-top: 30px; }  /* keeps the name clear of the centre menu button */
+  .panel.side .life, .panel.sideR .life { font-size: min(34cqw, 30cqh); }  /* these panels are short once turned */
   .panel { position: relative; border-radius: var(--radius); overflow: hidden; display: flex; }
   .panel.flip { transform: rotate(180deg); }
   .panel .zone { flex: 1; display: flex; align-items: center; border: 0; background: transparent; font-size: 36px; color: rgba(255,255,255,.55); }
@@ -63,7 +65,7 @@
   .warn { height: 1.2em; margin-top: 4px; font-size: 16px; font-weight: 700; color: #ffd36a; }
 
   /* Commander damage: small button per panel, opens a layer inside that panel (rotates with it) */
-  .cmdbtn { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 2; border: 1px solid rgba(255,255,255,.35);
+  .cmdbtn { pointer-events: auto; margin-top: 4px; border: 1px solid rgba(255,255,255,.35);
     background: rgba(0,0,0,.25); border-radius: 14px; padding: 6px 14px; font-size: 14px; color: rgba(255,255,255,.85); }
   .cmdlayer { position: absolute; inset: 0; z-index: 3; background: #0c0f13; display: none; flex-direction: column; padding: 10px 14px; gap: 6px; }
   .cmdlayer.on { display: flex; }
@@ -189,8 +191,8 @@
       el.innerHTML = '<div class="rot">' +
         '<button class="zone minus" aria-label="Minus one life">&minus;</button>' +
         '<button class="zone plus" aria-label="Plus one life">+</button>' +
-        '<div class="mid"><div class="name"></div><div class="life"></div><div class="tally"></div><div class="warn"></div></div>' +
-        '<button class="cmdbtn" aria-label="Commander damage">&#9876; Cmdr</button>' +
+        '<div class="mid"><div class="name"></div><div class="life"></div><div class="tally"></div><div class="warn"></div>' +
+        '<button class="cmdbtn" aria-label="Commander damage">&#9876; Cmdr</button></div>' +
         '<div class="cmdlayer"></div></div>';
       board.appendChild(el);
       if (state.cmdOn === false) el.querySelector('.cmdbtn').hidden = true;
