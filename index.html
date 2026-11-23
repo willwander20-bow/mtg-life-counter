@@ -120,7 +120,7 @@
   #ref .foot a { color: #7fb2ff; }
   #ref .none { padding: 24px; text-align: center; color: var(--muted); }
   #sheet.on { display: flex; }
-  #sheet .card { width: min(88vw, 360px); background: #1a1f26; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+  #sheet .card { max-height: 92vh; overflow-y: auto; width: min(88vw, 360px); background: #1a1f26; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
   #sheet button { padding: 16px; font-size: 18px; border: 0; border-radius: 12px; background: #2a313b; }
   #sheet button.danger { background: #8a3b3b; }
 </style>
@@ -151,13 +151,6 @@
     <div class="label">Starting life</div>
     <input id="life-input" type="number" inputmode="numeric" value="40" min="1" max="999">
   </div>
-  <div>
-    <div class="label">Commander damage</div>
-    <div class="row" id="cmd-row">
-      <button class="choice on" data-v="1">On</button>
-      <button class="choice" data-v="0">Off</button>
-    </div>
-  </div>
   <button class="start" id="start-btn">Start game</button>
   <button class="choice" id="ref-btn2" style="padding:14px 0;font-size:17px">Rules reference</button>
 </section>
@@ -167,6 +160,8 @@
 <div id="sheet"><div class="card">
   <button id="close-sheet">Back to game</button>
   <button id="undo-btn">Undo</button>
+  <button id="tog-cmd">Hide commander damage</button>
+  <button id="tog-poison">Hide poison</button>
   <button id="ref-btn">Rules reference</button>
   <button id="fs-btn" hidden>Full screen</button>
   <button id="new-game" class="danger">New game&hellip;</button>
@@ -223,15 +218,9 @@
     layout = b.dataset.v;
     [].forEach.call($('layout-row').querySelectorAll('.choice'), function (c) { c.classList.toggle('on', c === b); });
   });
-  var cmdOn = true;
-  $('cmd-row').addEventListener('click', function (e) {
-    var b = e.target.closest('.choice'); if (!b) return;
-    cmdOn = b.dataset.v === '1';
-    [].forEach.call($('cmd-row').querySelectorAll('.choice'), function (c) { c.classList.toggle('on', c === b); });
-  });
   $('start-btn').addEventListener('click', function () {
     var life = Math.max(1, Math.min(999, parseInt($('life-input').value, 10) || 40));
-    state = { n: count, start: life, cmdOn: cmdOn, layout: count === 3 ? layout : 'top', players: [], hist: [] };
+    state = { n: count, start: life, show: { cmd: true, poison: true }, layout: count === 3 ? layout : 'top', players: [], hist: [] };
     for (var i = 0; i < count; i++) state.players.push({ name: (setupNames[i] || '').trim() || 'Player ' + (i + 1), life: life, cmd: {} });
     save(); showGame();
   });
@@ -268,21 +257,41 @@
       board.appendChild(el);
       el.querySelector('.name').addEventListener('click', function () { openRename(i); });
       el.querySelector('.poisonbtn').addEventListener('click', function () { openPoison(i); });
-      if (state.cmdOn === false) el.querySelector('.cmdbtn').hidden = true;
-      else el.querySelector('.cmdbtn').addEventListener('click', function () { openCmd(i); });
+      el.querySelector('.cmdbtn').addEventListener('click', function () { openCmd(i); });
       bindZone(el.querySelector('.minus'), i, -1);
       bindZone(el.querySelector('.plus'), i, +1);
       render(i);
     });
+    applyVisibility();
   }
+
+  // ---- Show/hide the commander damage and poison buttons (menu toggles; the numbers are kept while hidden)
+  function flags() { return state.show || (state.show = { cmd: state.cmdOn !== false, poison: true }); }
+  function applyVisibility() {
+    var s = flags();
+    state.players.forEach(function (p, i) {
+      var el = document.querySelector('.p' + i);
+      el.querySelector('.cmdbtn').hidden = !s.cmd;
+      el.querySelector('.poisonbtn').hidden = !s.poison;
+      el.querySelector('.btnrow').style.display = (s.cmd || s.poison) ? '' : 'none';
+      var layer = el.querySelector('.cmdlayer');   // close a layer whose button is now hidden
+      if (layer.classList.contains('on') && ((layer.dataset.mode === 'poison' && !s.poison) || (layer.dataset.mode !== 'poison' && !s.cmd))) layer.classList.remove('on');
+      render(i);
+    });
+    $('tog-cmd').textContent = s.cmd ? 'Hide commander damage' : 'Show commander damage';
+    $('tog-poison').textContent = s.poison ? 'Hide poison' : 'Show poison';
+  }
+  $('tog-cmd').addEventListener('click', function () { var s = flags(); s.cmd = !s.cmd; save(); applyVisibility(); });
+  $('tog-poison').addEventListener('click', function () { var s = flags(); s.poison = !s.poison; save(); applyVisibility(); });
 
   var tallies = {}; // pending net change per player, shown for 1.5s
   function render(i) {
     var p = state.players[i], el = document.querySelector('.p' + i);
     el.querySelector('.name').textContent = p.name;
     el.querySelector('.life').textContent = p.life;
-    var lethal = Object.keys(p.cmd || {}).some(function (j) { return p.cmd[j] >= 21; });
-    var pz = p.poison || 0, pLethal = pz >= 10;
+    var s = flags();   // hidden things also hide their warning and don't dim the panel
+    var lethal = s.cmd && Object.keys(p.cmd || {}).some(function (j) { return p.cmd[j] >= 21; });
+    var pz = p.poison || 0, pLethal = s.poison && pz >= 10;
     el.classList.toggle('dead', p.life <= 0 || lethal || pLethal);
     el.querySelector('.warn').textContent = [lethal ? '⚠ 21 commander damage' : '', pLethal ? '☠ 10 poison' : ''].filter(Boolean).join(' · ');
     var pb = el.querySelector('.poisonbtn'); pb.textContent = '☠ ' + pz; pb.classList.toggle('lethal', pLethal);
