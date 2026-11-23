@@ -361,7 +361,8 @@
   // ---- Rules reference (data lives in keywords.js)
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function renderRef(filter) {
-    var K = window.KEYWORDS || [], M = window.KEYWORDS_META || {}, f = (filter || '').trim().toLowerCase();
+    var K = (window.KEYWORDS || []).slice().sort(function (a, b) { return a.name.localeCompare(b.name); }),
+        M = window.KEYWORDS_META || {}, f = (filter || '').trim().toLowerCase();
     var html = K.filter(function (k) {
       return !f || (k.name + ' ' + k.summary + ' ' + (k.misread || '') + ' ' + k.rules.map(function (r) { return r.label; }).join(' ')).toLowerCase().indexOf(f) !== -1;
     }).map(function (k) {
