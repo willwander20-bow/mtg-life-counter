@@ -25,7 +25,15 @@
   button { font: inherit; color: inherit; }
 
   /* Setup screen */
-  #setup { height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 28px; padding: 24px; max-width: 480px; margin: 0 auto; }
+  #setup { height: 100%; display: flex; flex-direction: column; justify-content: safe center; gap: 20px; padding: 24px; max-width: 480px; margin: 0 auto; overflow-y: auto; }
+  #names { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  #names input, #rn-input { width: 100%; min-width: 0; padding: 12px; font-size: 17px; background: #1a1f26; border: 2px solid #2a313b; border-radius: 12px; color: var(--ink); }
+  .mid .name { pointer-events: auto; padding: 4px 14px; border-bottom: 1px dotted rgba(255,255,255,.35); cursor: pointer; }
+  #rename { position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,.75); display: none; align-items: center; justify-content: center; }
+  #rename.on { display: flex; }
+  #rename .card { width: min(88vw, 360px); background: #1a1f26; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+  #rename button { padding: 14px; font-size: 18px; border: 0; border-radius: 12px; background: #2a313b; }
+  #rename button.save { background: #3d7be0; }
   #setup h1 { margin: 0; font-size: 28px; font-weight: 700; }
   .row { display: flex; gap: 10px; }
   .choice { flex: 1; padding: 18px 0; font-size: 24px; border: 2px solid #2a313b; background: #1a1f26; border-radius: 14px; }
@@ -134,6 +142,10 @@
     </div>
   </div>
   <div>
+    <div class="label">Names (optional)</div>
+    <div id="names"></div>
+  </div>
+  <div>
     <div class="label">Starting life</div>
     <input id="life-input" type="number" inputmode="numeric" value="40" min="1" max="999">
   </div>
@@ -156,6 +168,13 @@
   <button id="ref-btn">Rules reference</button>
   <button id="fs-btn" hidden>Full screen</button>
   <button id="new-game" class="danger">New game&hellip;</button>
+</div></div>
+
+<div id="rename"><div class="card">
+  <div class="label" id="rn-label">Name</div>
+  <input id="rn-input" maxlength="14" autocomplete="off">
+  <button class="save" id="rn-save">Save</button>
+  <button id="rn-cancel">Cancel</button>
 </div></div>
 
 <div id="ref">
@@ -182,7 +201,20 @@
     count = +b.dataset.n;
     [].forEach.call($('count-row').querySelectorAll('.choice'), function (c) { c.classList.toggle('on', c === b); });
     $('layout-wrap').style.display = count === 3 ? '' : 'none';
+    buildNames();
   });
+  // Optional names on the setup screen; typed values are kept when the player count changes.
+  var setupNames = ['', '', '', ''];
+  function buildNames() {
+    var box = $('names'); box.innerHTML = '';
+    for (var i = 0; i < count; i++) (function (i) {
+      var inp = document.createElement('input');
+      inp.maxLength = 14; inp.placeholder = 'Player ' + (i + 1); inp.value = setupNames[i]; inp.autocomplete = 'off';
+      inp.addEventListener('input', function () { setupNames[i] = inp.value; });
+      box.appendChild(inp);
+    })(i);
+  }
+  buildNames();
   var layout = 'top';
   $('layout-row').addEventListener('click', function (e) {
     var b = e.target.closest('.choice'); if (!b) return;
@@ -198,7 +230,7 @@
   $('start-btn').addEventListener('click', function () {
     var life = Math.max(1, Math.min(999, parseInt($('life-input').value, 10) || 40));
     state = { n: count, start: life, cmdOn: cmdOn, layout: count === 3 ? layout : 'top', players: [], hist: [] };
-    for (var i = 0; i < count; i++) state.players.push({ name: 'Player ' + (i + 1), life: life, cmd: {} });
+    for (var i = 0; i < count; i++) state.players.push({ name: (setupNames[i] || '').trim() || 'Player ' + (i + 1), life: life, cmd: {} });
     save(); showGame();
   });
 
@@ -231,6 +263,7 @@
         '<button class="cmdbtn" aria-label="Commander damage">&#9876; Cmdr</button></div></div>' +
         '<div class="cmdlayer"></div></div>';
       board.appendChild(el);
+      el.querySelector('.name').addEventListener('click', function () { openRename(i); });
       if (state.cmdOn === false) el.querySelector('.cmdbtn').hidden = true;
       else el.querySelector('.cmdbtn').addEventListener('click', function () { openCmd(i); });
       bindZone(el.querySelector('.minus'), i, -1);
@@ -278,6 +311,32 @@
     } else state.players[e.i].life -= e.d;
     save(); render(e.i); refreshUndo();
   });
+
+  // ---- Rename a player: tap the name in their panel
+  var renaming = -1;
+  function openRename(i) {
+    renaming = i;
+    $('rn-label').textContent = 'Name for ' + 'Player ' + (i + 1);
+    $('rn-input').value = state.players[i].name;
+    $('rename').classList.add('on');
+    setTimeout(function () { $('rn-input').focus(); $('rn-input').select(); }, 50);
+  }
+  function closeRename() { $('rename').classList.remove('on'); renaming = -1; }
+  function saveRename() {
+    if (renaming < 0) return;
+    var i = renaming, v = $('rn-input').value.trim();
+    state.players[i].name = v || 'Player ' + (i + 1);
+    save(); render(i);
+    // keep any open commander layers (they list other players' names) in step
+    state.players.forEach(function (p, j) {
+      var layer = document.querySelector('.p' + j + ' .cmdlayer');
+      if (layer && layer.classList.contains('on')) renderCmd(j);
+    });
+    closeRename();
+  }
+  $('rn-save').addEventListener('click', saveRename);
+  $('rn-cancel').addEventListener('click', closeRename);
+  $('rn-input').addEventListener('keydown', function (e) { if (e.key === 'Enter') saveRename(); });
 
   // ---- Commander damage layer (per panel, per opponent; never touches life)
   function openCmd(i) {
