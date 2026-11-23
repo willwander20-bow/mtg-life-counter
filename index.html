@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#111418">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>Life Counter</title>
 <style>
   :root {
@@ -128,6 +131,7 @@
 <div id="sheet"><div class="card">
   <button id="close-sheet">Back to game</button>
   <button id="undo-btn">Undo</button>
+  <button id="fs-btn" hidden>Full screen</button>
   <button id="new-game" class="danger">New game&hellip;</button>
 </div></div>
 
@@ -324,6 +328,23 @@
     try { localStorage.removeItem(KEY); } catch (e) {}
     state = null; location.reload();
   });
+
+  // ---- Full screen (button only appears where the browser supports it; hidden when installed to the home screen)
+  var fsBtn = $('fs-btn'), de = document.documentElement;
+  var canFs = !!(de.requestFullscreen) && !window.matchMedia('(display-mode: fullscreen)').matches && !window.matchMedia('(display-mode: standalone)').matches;
+  function fsLabel() { fsBtn.textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen'; }
+  if (canFs) {
+    fsBtn.hidden = false; fsLabel();
+    fsBtn.addEventListener('click', function () {
+      if (document.fullscreenElement) document.exitFullscreen(); else de.requestFullscreen({ navigationUI: 'hide' }).catch(function () {});
+    });
+    document.addEventListener('fullscreenchange', fsLabel);
+  }
+
+  // ---- Offline / installable (service worker needs https or localhost)
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  }
 
   // ---- Keep screen on during a game (ignored where unsupported)
   var lock = null;
