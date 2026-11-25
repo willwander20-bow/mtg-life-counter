@@ -265,14 +265,15 @@
   }
 
   // ---- Player colors: 1 color = solid panel, several (a deck's colors) = diagonal stripes
-  var SW = [
-    { k: 'U', n: 'Blue', c: '#1f5f94' }, { k: 'G', n: 'Green', c: '#1f7a50' }, { k: 'R', n: 'Red', c: '#9a3535' },
-    { k: 'P', n: 'Purple', c: '#6b3f9c' }, { k: 'W', n: 'White', c: '#d8d4c6' }, { k: 'B', n: 'Black', c: '#2b2c31' },
+  var SW = [   // the five mana colors first, in the standard WUBRG order, then the extras
+    { k: 'W', n: 'White', c: '#d8d4c6' }, { k: 'U', n: 'Blue', c: '#1f5f94' }, { k: 'B', n: 'Black', c: '#2b2c31' },
+    { k: 'R', n: 'Red', c: '#9a3535' }, { k: 'G', n: 'Green', c: '#1f7a50' }, { k: 'P', n: 'Purple', c: '#6b3f9c' },
     { k: 'O', n: 'Orange', c: '#b5622a' }, { k: 'T', n: 'Teal', c: '#1f7f86' }, { k: 'K', n: 'Pink', c: '#b04773' }
   ];
   function swColor(k) { for (var x = 0; x < SW.length; x++) if (SW[x].k === k) return SW[x].c; return null; }
   function bgFor(cols, i) {
-    var cs = (cols || []).map(swColor).filter(Boolean);
+    var order = SW.map(function (x) { return x.k; });   // stripes always run in swatch (WUBRG) order, whatever order they were tapped
+    var cs = (cols || []).slice().sort(function (x, y) { return order.indexOf(x) - order.indexOf(y); }).map(swColor).filter(Boolean);
     if (!cs.length) return COLORS[i];
     if (cs.length === 1) return cs[0];
     var step = 100 / cs.length;
