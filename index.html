@@ -119,6 +119,33 @@
   #ref .foot { font-size: 12px; color: var(--muted); padding: 8px 4px; line-height: 1.5; }
   #ref .foot a { color: #7fb2ff; }
   #ref .none { padding: 24px; text-align: center; color: var(--muted); }
+  /* Player colors: dot button (setup + name dialog) and the color pop-up */
+  #names .nrow { display: flex; gap: 6px; }
+  .cdot { flex: none; width: 44px; padding: 0; border: 2px solid #2a313b; border-radius: 12px; background: #1a1f26; display: flex; align-items: center; justify-content: center; }
+  .cdot i { display: block; width: 24px; height: 24px; border-radius: 50%; border: 2px solid rgba(255,255,255,.55); }
+  #rename .nmrow { display: flex; gap: 8px; }
+  #rename .cdot { width: 56px; padding: 0; background: #1a1f26; border: 2px solid #2a313b; }
+  #colorpick { position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,.75); display: none; align-items: center; justify-content: center; }
+  #colorpick.on { display: flex; }
+  #colorpick .card { width: min(88vw, 360px); max-height: 92vh; overflow-y: auto; background: #1a1f26; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+  #colorpick .hint { color: var(--muted); font-size: 14px; line-height: 1.4; }
+  #colorpick .swatches { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  #colorpick .sw { height: 58px; border-radius: 14px; border: 3px solid transparent; color: #fff; font-size: 15px; font-weight: 600; padding: 0; text-shadow: 0 1px 3px rgba(0,0,0,.7); }
+  #colorpick .sw.on { border-color: #fff; }
+  #colorpick .sw.on::after { content: ' \2713'; }
+  #colorpick button.plain { padding: 14px; font-size: 17px; border: 0; border-radius: 12px; background: #2a313b; color: var(--ink); }
+  #colorpick button.done { background: #3d7be0; }
+  /* Panels containing white get a shadow so the light text stays readable */
+  .panel.lite .life, .panel.lite .name, .panel.lite .tally, .panel.lite .zone { text-shadow: 0 0 6px rgba(0,0,0,.65), 0 1px 2px rgba(0,0,0,.8); }
+  .panel.lite .zone { color: rgba(255,255,255,.85); }
+  /* Banner for first-player roll and dice */
+  #banner { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 8; width: min(82vw, 330px); background: rgba(12,15,19,.96); border: 2px solid #3d7be0; border-radius: 18px; padding: 18px; text-align: center; display: none; }
+  #banner.on { display: block; }
+  #banner .big { font-size: 26px; font-weight: 800; }
+  #banner .sm { font-size: 14px; color: var(--muted); margin-top: 8px; line-height: 1.4; }
+  #sheet .row button { flex: 1; padding: 14px 0; }
+  .expbtn { pointer-events: auto; border: 1px solid rgba(255,255,255,.35); background: rgba(0,0,0,.25); border-radius: 14px; padding: 6px 14px; font-size: 14px; color: rgba(255,255,255,.85); }
+  .btnrow { flex-wrap: wrap; justify-content: center; }
   #sheet.on { display: flex; }
   #sheet .card { max-height: 92vh; overflow-y: auto; width: min(88vw, 360px); background: #1a1f26; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
   #sheet button { padding: 16px; font-size: 18px; border: 0; border-radius: 12px; background: #2a313b; }
@@ -148,6 +175,13 @@
     <div id="names"></div>
   </div>
   <div>
+    <div class="label">Roll a d20 for first player</div>
+    <div class="row" id="first-row">
+      <button class="choice on" data-v="1">On</button>
+      <button class="choice" data-v="0">Off</button>
+    </div>
+  </div>
+  <div>
     <div class="label">Starting life</div>
     <input id="life-input" type="number" inputmode="numeric" value="40" min="1" max="999">
   </div>
@@ -162,6 +196,9 @@
   <button id="undo-btn">Undo</button>
   <button id="tog-cmd">Hide commander damage</button>
   <button id="tog-poison">Hide poison</button>
+  <button id="tog-exp">Show experience</button>
+  <div class="row"><button id="roll-d6">d6</button><button id="roll-d20">d20</button><button id="roll-coin">Coin</button></div>
+  <button id="pick-first">Pick first player</button>
   <button id="ref-btn">Rules reference</button>
   <button id="fs-btn" hidden>Full screen</button>
   <button id="new-game" class="danger">New game&hellip;</button>
@@ -169,10 +206,20 @@
 
 <div id="rename"><div class="card">
   <div class="label" id="rn-label">Name</div>
-  <input id="rn-input" maxlength="14" autocomplete="off">
+  <div class="nmrow"><input id="rn-input" maxlength="14" autocomplete="off"><button class="cdot" id="rn-dot" aria-label="Choose panel color"><i></i></button></div>
   <button class="save" id="rn-save">Save</button>
   <button id="rn-cancel">Cancel</button>
 </div></div>
+
+<div id="colorpick"><div class="card">
+  <div class="label" id="cp-label" style="margin:0">Panel color</div>
+  <div class="hint">Pick one color, or all of your deck's colors. Several colors split the panel into stripes.</div>
+  <div class="swatches" id="cp-sw"></div>
+  <button class="plain" id="cp-default">Default color</button>
+  <button class="plain done" id="cp-done">Done</button>
+</div></div>
+
+<div id="banner"></div>
 
 <div id="ref">
   <div class="bar"><input id="ref-q" type="search" placeholder="Search (e.g. hexproof)" autocomplete="off"><button id="ref-close">Close</button></div>
@@ -201,28 +248,103 @@
     buildNames();
   });
   // Optional names on the setup screen; typed values are kept when the player count changes.
-  var setupNames = ['', '', '', ''];
+  var setupNames = ['', '', '', ''], setupColors = [[], [], [], []], setupDots = [];
   function buildNames() {
-    var box = $('names'); box.innerHTML = '';
+    var box = $('names'); box.innerHTML = ''; setupDots = [];
     for (var i = 0; i < count; i++) (function (i) {
+      var row = document.createElement('div'); row.className = 'nrow';
       var inp = document.createElement('input');
       inp.maxLength = 14; inp.placeholder = 'Player ' + (i + 1); inp.value = setupNames[i]; inp.autocomplete = 'off';
       inp.addEventListener('input', function () { setupNames[i] = inp.value; });
-      box.appendChild(inp);
+      var dot = document.createElement('button');
+      dot.className = 'cdot'; dot.setAttribute('aria-label', 'Choose color for player ' + (i + 1)); dot.innerHTML = '<i></i>';
+      dot.addEventListener('click', function () { openColors('setup', i); });
+      setupDots[i] = dot; paintDot(dot, setupColors[i], i);
+      row.appendChild(inp); row.appendChild(dot); box.appendChild(row);
     })(i);
   }
+
+  // ---- Player colors: 1 color = solid panel, several (a deck's colors) = diagonal stripes
+  var SW = [
+    { k: 'U', n: 'Blue', c: '#1f5f94' }, { k: 'G', n: 'Green', c: '#1f7a50' }, { k: 'R', n: 'Red', c: '#9a3535' },
+    { k: 'P', n: 'Purple', c: '#6b3f9c' }, { k: 'W', n: 'White', c: '#d8d4c6' }, { k: 'B', n: 'Black', c: '#2b2c31' }
+  ];
+  function swColor(k) { for (var x = 0; x < SW.length; x++) if (SW[x].k === k) return SW[x].c; return null; }
+  function bgFor(cols, i) {
+    var cs = (cols || []).map(swColor).filter(Boolean);
+    if (!cs.length) return COLORS[i];
+    if (cs.length === 1) return cs[0];
+    var step = 100 / cs.length;
+    return 'linear-gradient(115deg, ' + cs.map(function (c, x) { return c + ' ' + (x * step) + '% ' + ((x + 1) * step) + '%'; }).join(', ') + ')';
+  }
+  function paintDot(btn, cols, i) { btn.querySelector('i').style.background = bgFor(cols, i); }
+  var cpTarget = null;
+  function curCols() { return cpTarget.where === 'setup' ? setupColors[cpTarget.i] : (state.players[cpTarget.i].colors || []); }
+  function setCols(a) {
+    var i = cpTarget.i;
+    if (cpTarget.where === 'setup') { setupColors[i] = a; paintDot(setupDots[i], a, i); }
+    else { state.players[i].colors = a; save(); render(i); paintDot($('rn-dot'), a, i); }
+    renderColors();
+  }
+  function openColors(where, i) { cpTarget = { where: where, i: i }; $('cp-label').textContent = 'Color for Player ' + (i + 1); renderColors(); $('colorpick').classList.add('on'); }
+  function renderColors() {
+    var cols = curCols(), box = $('cp-sw'); box.innerHTML = '';
+    SW.forEach(function (s) {
+      var b = document.createElement('button'); b.className = 'sw' + (cols.indexOf(s.k) !== -1 ? ' on' : '');
+      b.style.background = s.c; b.textContent = s.n;
+      b.addEventListener('click', function () {
+        var c = curCols().slice(), at = c.indexOf(s.k);
+        if (at === -1) c.push(s.k); else c.splice(at, 1);
+        setCols(c);
+      });
+      box.appendChild(b);
+    });
+  }
+  $('cp-default').addEventListener('click', function () { setCols([]); });
+  $('cp-done').addEventListener('click', function () { $('colorpick').classList.remove('on'); cpTarget = null; });
+  $('rn-dot').addEventListener('click', function () { if (renaming >= 0) openColors('game', renaming); });
   buildNames();
+
+  // ---- Banner (first-player roll, dice, coin): tap to dismiss
+  var bannerTimer = null;
+  function banner(big, sm, ms) {
+    var b = $('banner'); b.innerHTML = '<div class="big"></div><div class="sm"></div>';
+    b.firstChild.textContent = big; b.lastChild.textContent = sm || '';
+    b.classList.add('on'); clearTimeout(bannerTimer);
+    bannerTimer = setTimeout(function () { b.classList.remove('on'); }, ms);
+  }
+  $('banner').addEventListener('click', function () { clearTimeout(bannerTimer); this.classList.remove('on'); });
+  function d(n) { return 1 + Math.floor(Math.random() * n); }
+  // d20 for each player; tied top rollers re-roll until one is highest. Not saved, changes nothing in the game.
+  function pickFirst() {
+    var names = state.players.map(function (p) { return p.name; });
+    var rolls = names.map(function () { return d(20); }), pool = names.map(function (n, i) { return i; }), ties = 0;
+    while (true) {
+      var top = Math.max.apply(null, pool.map(function (i) { return rolls[i]; }));
+      pool = pool.filter(function (i) { return rolls[i] === top; });
+      if (pool.length === 1) break;
+      ties++; pool.forEach(function (i) { rolls[i] = d(20); });
+    }
+    banner(names[pool[0]] + ' goes first', 'Rolls: ' + names.map(function (n, i) { return n + ' ' + rolls[i]; }).join(' · ') + (ties ? ' (tie re-rolled)' : ''), 15000);
+  }
   var layout = 'top';
   $('layout-row').addEventListener('click', function (e) {
     var b = e.target.closest('.choice'); if (!b) return;
     layout = b.dataset.v;
     [].forEach.call($('layout-row').querySelectorAll('.choice'), function (c) { c.classList.toggle('on', c === b); });
   });
+  var rollFirst = true;
+  $('first-row').addEventListener('click', function (e) {
+    var b = e.target.closest('.choice'); if (!b) return;
+    rollFirst = b.dataset.v === '1';
+    [].forEach.call($('first-row').querySelectorAll('.choice'), function (c) { c.classList.toggle('on', c === b); });
+  });
   $('start-btn').addEventListener('click', function () {
     var life = Math.max(1, Math.min(999, parseInt($('life-input').value, 10) || 40));
-    state = { n: count, start: life, show: { cmd: true, poison: true }, layout: count === 3 ? layout : 'top', players: [], hist: [] };
-    for (var i = 0; i < count; i++) state.players.push({ name: (setupNames[i] || '').trim() || 'Player ' + (i + 1), life: life, cmd: {} });
+    state = { n: count, start: life, show: { cmd: true, poison: true, exp: false }, layout: count === 3 ? layout : 'top', players: [], hist: [] };
+    for (var i = 0; i < count; i++) state.players.push({ name: (setupNames[i] || '').trim() || 'Player ' + (i + 1), life: life, cmd: {}, colors: setupColors[i].slice() });
     save(); showGame();
+    if (rollFirst) pickFirst();
   });
 
   // ---- Game
@@ -246,17 +368,18 @@
     state.players.forEach(function (p, i) {
       var el = document.createElement('div');
       el.className = 'panel p' + i + (layoutFlags(state.n, i) ? ' flip' : '') + (side ? (i === 0 ? ' side' : ' sideR') : '');
-      el.style.background = COLORS[i];
       el.innerHTML = '<div class="rot">' +
         '<button class="zone minus" aria-label="Minus one life">&minus;</button>' +
         '<button class="zone plus" aria-label="Plus one life">+</button>' +
         '<div class="mid"><div class="top"><div class="name"></div><div class="tally"></div></div><div class="life"></div><div class="under"><div class="warn"></div>' +
         '<div class="btnrow"><button class="cmdbtn" aria-label="Commander damage">&#9876; Cmdr</button>' +
-        '<button class="poisonbtn" aria-label="Poison counters">&#9760; 0</button></div></div></div>' +
+        '<button class="poisonbtn" aria-label="Poison counters">&#9760; 0</button>' +
+        '<button class="expbtn" aria-label="Experience counters">&#10022; 0</button></div></div></div>' +
         '<div class="cmdlayer"></div></div>';
       board.appendChild(el);
       el.querySelector('.name').addEventListener('click', function () { openRename(i); });
-      el.querySelector('.poisonbtn').addEventListener('click', function () { openPoison(i); });
+      el.querySelector('.poisonbtn').addEventListener('click', function () { openCounter(i, 'poison'); });
+      el.querySelector('.expbtn').addEventListener('click', function () { openCounter(i, 'exp'); });
       el.querySelector('.cmdbtn').addEventListener('click', function () { openCmd(i); });
       bindZone(el.querySelector('.minus'), i, -1);
       bindZone(el.querySelector('.plus'), i, +1);
@@ -266,21 +389,24 @@
   }
 
   // ---- Show/hide the commander damage and poison buttons (menu toggles; the numbers are kept while hidden)
-  function flags() { return state.show || (state.show = { cmd: state.cmdOn !== false, poison: true }); }
+  function flags() { return state.show || (state.show = { cmd: state.cmdOn !== false, poison: true, exp: false }); }
   function applyVisibility() {
     var s = flags();
     state.players.forEach(function (p, i) {
       var el = document.querySelector('.p' + i);
       el.querySelector('.cmdbtn').hidden = !s.cmd;
       el.querySelector('.poisonbtn').hidden = !s.poison;
-      el.querySelector('.btnrow').style.display = (s.cmd || s.poison) ? '' : 'none';
-      var layer = el.querySelector('.cmdlayer');   // close a layer whose button is now hidden
-      if (layer.classList.contains('on') && ((layer.dataset.mode === 'poison' && !s.poison) || (layer.dataset.mode !== 'poison' && !s.cmd))) layer.classList.remove('on');
+      el.querySelector('.expbtn').hidden = !s.exp;
+      el.querySelector('.btnrow').style.display = (s.cmd || s.poison || s.exp) ? '' : 'none';
+      var layer = el.querySelector('.cmdlayer'), m = layer.dataset.mode || 'cmd';   // close a layer whose button is now hidden
+      if (layer.classList.contains('on') && !s[m]) layer.classList.remove('on');
       render(i);
     });
     $('tog-cmd').textContent = s.cmd ? 'Hide commander damage' : 'Show commander damage';
     $('tog-poison').textContent = s.poison ? 'Hide poison' : 'Show poison';
+    $('tog-exp').textContent = s.exp ? 'Hide experience' : 'Show experience';
   }
+  $('tog-exp').addEventListener('click', function () { var s = flags(); s.exp = !s.exp; save(); applyVisibility(); });
   $('tog-cmd').addEventListener('click', function () { var s = flags(); s.cmd = !s.cmd; save(); applyVisibility(); });
   $('tog-poison').addEventListener('click', function () { var s = flags(); s.poison = !s.poison; save(); applyVisibility(); });
 
@@ -289,6 +415,9 @@
     var p = state.players[i], el = document.querySelector('.p' + i);
     el.querySelector('.name').textContent = p.name;
     el.querySelector('.life').textContent = p.life;
+    el.style.background = bgFor(p.colors, i);
+    el.classList.toggle('lite', (p.colors || []).indexOf('W') !== -1);
+    el.querySelector('.expbtn').textContent = '✦ ' + (p.exp || 0);
     var s = flags();   // hidden things also hide their warning and don't dim the panel
     var lethal = s.cmd && Object.keys(p.cmd || {}).some(function (j) { return p.cmd[j] >= 21; });
     var pz = p.poison || 0, pLethal = s.poison && pz >= 10;
@@ -311,12 +440,13 @@
   function describe(e) {
     var who = state.players[e.i].name, s = (e.d > 0 ? '+' : '−') + Math.abs(e.d);
     if (e.k === 'p') return who + ' poison ' + s;
+    if (e.k === 'x') return who + ' experience ' + s;
     return e.k === 'c' ? who + ' cmdr dmg from ' + state.players[e.j].name + ' ' + s : who + ' life ' + s;
   }
   // Re-draw whichever layer (commander or poison) is on a panel
   function refreshLayer(i) {
     var layer = document.querySelector('.p' + i + ' .cmdlayer');
-    if (layer && layer.dataset.mode === 'poison') renderPoison(i); else renderCmd(i);
+    if (layer && CTR[layer.dataset.mode]) renderCounter(i, layer.dataset.mode); else renderCmd(i);
   }
   function refreshUndo() {
     var h = state && state.hist || [], b = $('undo-btn');
@@ -329,8 +459,9 @@
       state.players[e.i].cmd[e.j] = Math.max(0, (state.players[e.i].cmd[e.j] || 0) - e.d);
       state.players[e.i].life += e.d;   // commander damage also cost life; give it back
       refreshLayer(e.i);
-    } else if (e.k === 'p') {
-      state.players[e.i].poison = Math.max(0, (state.players[e.i].poison || 0) - e.d);
+    } else if (e.k === 'p' || e.k === 'x') {
+      var f = e.k === 'p' ? 'poison' : 'exp';
+      state.players[e.i][f] = Math.max(0, (state.players[e.i][f] || 0) - e.d);
       refreshLayer(e.i);
     } else state.players[e.i].life -= e.d;
     save(); render(e.i); refreshUndo();
@@ -342,6 +473,7 @@
     renaming = i;
     $('rn-label').textContent = 'Name for ' + 'Player ' + (i + 1);
     $('rn-input').value = state.players[i].name;
+    paintDot($('rn-dot'), state.players[i].colors, i);
     $('rename').classList.add('on');
     setTimeout(function () { $('rn-input').focus(); $('rn-input').select(); }, 50);
   }
@@ -399,34 +531,39 @@
     save(); renderCmd(i); render(i);
   }
 
-  // ---- Poison layer: 10 or more poison counters loses (CR 704.5c). Separate from life.
-  function openPoison(i) {
+  // ---- Counter layers, one per panel and counter. Separate from life.
+  // Poison: 10 or more loses (CR 122.1f). Experience: a plain tally; what it does is on the card.
+  var CTR = {
+    poison: { field: 'poison', k: 'p', title: 'Poison counters on ', lethal: 10, who: '10 loses' },
+    exp: { field: 'exp', k: 'x', title: 'Experience counters on ', lethal: 0, who: 'Tally only' }
+  };
+  function openCounter(i, mode) {
     var layer = document.querySelector('.p' + i + ' .cmdlayer');
-    layer.classList.add('on'); renderPoison(i);
+    layer.classList.add('on'); renderCounter(i, mode);
   }
-  function renderPoison(i) {
-    var p = state.players[i], layer = document.querySelector('.p' + i + ' .cmdlayer'), n = p.poison || 0;
-    layer.dataset.mode = 'poison';
+  function renderCounter(i, mode) {
+    var C = CTR[mode], p = state.players[i], layer = document.querySelector('.p' + i + ' .cmdlayer'), n = p[C.field] || 0, lethal = C.lethal && n >= C.lethal;
+    layer.dataset.mode = mode;
     layer.innerHTML = '<h3></h3>';
-    layer.querySelector('h3').textContent = 'Poison counters on ' + p.name;
+    layer.querySelector('h3').textContent = C.title + p.name;
     var row = document.createElement('div');
-    row.className = 'cmdrow' + (n >= 10 ? ' lethal' : '');
-    row.innerHTML = '<div class="who">10 loses</div><button aria-label="Minus">&minus;</button><div class="n"></div><button aria-label="Plus">+</button><div class="flag">' + (n >= 10 ? 'Lethal' : '') + '</div>';
+    row.className = 'cmdrow' + (lethal ? ' lethal' : '');
+    row.innerHTML = '<div class="who">' + C.who + '</div><button aria-label="Minus">&minus;</button><div class="n"></div><button aria-label="Plus">+</button><div class="flag">' + (lethal ? 'Lethal' : '') + '</div>';
     row.querySelector('.n').textContent = n;
     var b = row.querySelectorAll('button');
-    b[0].addEventListener('click', function () { poisonChange(i, -1); });
-    b[1].addEventListener('click', function () { poisonChange(i, 1); });
+    b[0].addEventListener('click', function () { counterChange(i, mode, -1); });
+    b[1].addEventListener('click', function () { counterChange(i, mode, 1); });
     layer.appendChild(row);
     var done = document.createElement('button');
     done.className = 'cmddone'; done.textContent = 'Done';
     done.addEventListener('click', function () { layer.classList.remove('on'); });
     layer.appendChild(done);
   }
-  function poisonChange(i, d) {
-    var p = state.players[i], old = p.poison || 0, n = Math.max(0, old + d);
+  function counterChange(i, mode, d) {
+    var C = CTR[mode], p = state.players[i], old = p[C.field] || 0, n = Math.max(0, old + d);
     if (n === old) return;
-    p.poison = n; pushHist({ k: 'p', i: i, j: -1, d: n - old });
-    save(); renderPoison(i); render(i);
+    p[C.field] = n; pushHist({ k: C.k, i: i, j: -1, d: n - old });
+    save(); renderCounter(i, mode); render(i);
   }
 
   function change(i, d) {
@@ -466,6 +603,11 @@
   // ---- Menu (two deliberate steps to wipe a game)
   $('menu-btn').addEventListener('click', function () { $('sheet').classList.add('on'); refreshUndo(); armed = false; $('new-game').textContent = 'New game…'; });
   $('close-sheet').addEventListener('click', function () { $('sheet').classList.remove('on'); });
+  function menuRoll(fn) { return function () { $('sheet').classList.remove('on'); fn(); }; }
+  $('pick-first').addEventListener('click', menuRoll(pickFirst));
+  $('roll-d6').addEventListener('click', menuRoll(function () { banner(String(d(6)), 'd6', 8000); }));
+  $('roll-d20').addEventListener('click', menuRoll(function () { banner(String(d(20)), 'd20', 8000); }));
+  $('roll-coin').addEventListener('click', menuRoll(function () { banner(d(2) === 1 ? 'Heads' : 'Tails', 'Coin flip', 8000); }));
   var armed = false;
   $('new-game').addEventListener('click', function () {
     if (!armed) { armed = true; this.textContent = 'Tap again: erase this game'; return; }

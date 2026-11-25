@@ -231,6 +231,17 @@ window.KEYWORDS = [
     verified: '2026-11-22'
   },
   {
+    name: 'Experience counters',
+    rules: [{ label: '122.1', id: 'R1221' }],
+    summary: "A tally marker kept on a player. The rules define counters in general; what experience counters do comes only from the cards that use them.",
+    doesNot: [
+      "Have no built-in effect and no lose-the-game number, unlike poison.",
+      "Don't change your life total."
+    ],
+    misread: "There is no separate rule for experience counters. A counter on a player does whatever the card that cares about it says, so read that card.",
+    verified: '2026-11-25'
+  },
+  {
     name: 'Commander tax',
     rules: [{ label: '903.8', id: 'R9038' }],
     summary: "Casting your commander from the command zone costs {2} more for each previous time you cast it from there this game.",
