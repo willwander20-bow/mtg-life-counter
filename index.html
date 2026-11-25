@@ -267,9 +267,10 @@
   // ---- Player colors: 1 color = solid panel, several (a deck's colors) = diagonal stripes
   var SW = [
     { k: 'U', n: 'Blue', c: '#1f5f94' }, { k: 'G', n: 'Green', c: '#1f7a50' }, { k: 'R', n: 'Red', c: '#9a3535' },
-    { k: 'P', n: 'Purple', c: '#6b3f9c' }, { k: 'W', n: 'White', c: '#d8d4c6' }, { k: 'B', n: 'Black', c: '#2b2c31' }
+    { k: 'W', n: 'White', c: '#d8d4c6' }, { k: 'B', n: 'Black', c: '#2b2c31' }
   ];
-  function swColor(k) { for (var x = 0; x < SW.length; x++) if (SW[x].k === k) return SW[x].c; return null; }
+  var ALLC = SW.concat([{ k: 'P', n: 'Purple', c: '#6b3f9c' }]);   // purple is only reachable through Random (and old saved games)
+  function swColor(k) { for (var x = 0; x < ALLC.length; x++) if (ALLC[x].k === k) return ALLC[x].c; return null; }
   function bgFor(cols, i) {
     var cs = (cols || []).map(swColor).filter(Boolean);
     if (!cs.length) return COLORS[i];
@@ -299,6 +300,13 @@
       });
       box.appendChild(b);
     });
+    var r = document.createElement('button'); r.className = 'sw'; r.textContent = 'Random';
+    r.style.background = 'linear-gradient(115deg, #1f5f94, #1f7a50, #9a3535, #6b3f9c, #d8d4c6)';
+    r.addEventListener('click', function () {   // one random color, different from the current single color
+      var cur = curCols(), pool = ALLC.filter(function (c) { return !(cur.length === 1 && cur[0] === c.k); });
+      setCols([pool[Math.floor(Math.random() * pool.length)].k]);
+    });
+    box.appendChild(r);
   }
   $('cp-default').addEventListener('click', function () { setCols([]); });
   $('cp-done').addEventListener('click', function () { $('colorpick').classList.remove('on'); cpTarget = null; });
