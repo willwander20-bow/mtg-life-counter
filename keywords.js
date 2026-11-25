@@ -132,6 +132,17 @@ window.KEYWORDS = [
     verified: '2026-11-22'
   },
   {
+    name: 'Prowess',
+    rules: [{ label: '702.108', id: 'R702108' }],
+    summary: "Whenever you cast a noncreature spell, this creature gets +1/+1 until end of turn.",
+    doesNot: [
+      "Doesn't trigger on creature spells, or on spells your opponents cast.",
+      "Doesn't trigger on abilities or lands, only on spells you cast."
+    ],
+    misread: "Prowess is a trigger, so each noncreature spell gives its own +1/+1. If a creature has prowess twice, each instance triggers separately.",
+    verified: '2026-11-25'
+  },
+  {
     name: 'Menace',
     rules: [{ label: '702.111', id: 'R702111' }],
     summary: "An evasion ability. A creature with menace can't be blocked except by two or more creatures.",
